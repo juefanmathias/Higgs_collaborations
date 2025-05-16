@@ -61,30 +61,26 @@ class Model:
             None
         """
 
-        indecies = np.arange(150_000)
+        indecies = np.arange(150)
 
         np.random.shuffle(indecies)
 
-        train_indecies = indecies[:50_000]
-        holdout_indecies = indecies[50_000:100_000]
-        valid_indecies = indecies[100_000:]
+        train_indecies = indecies[:50]
+        holdout_indecies = indecies[50:100]
+        valid_indecies = indecies[100:]
 
-        self.training_set = get_train_set(selected_indices=train_indecies)
+        training_df = get_train_set(selected_indices=train_indecies)
 
-        total_number = self.training_set["total_rows"]
+        self.training_set = {
+            "labels": training_df.pop("labels"),
+            "weights": training_df.pop("weights"),
+            "detailed_labels": training_df.pop("detailed_labels"),
+            "data": training_df,
+        }
 
-        self.training_set["weights"] = (
-            self.training_set["weights"] * total_number / 50_000
-        )
+        del training_df
+
         self.systematics = systematics
-
-        self.valid_set = get_train_set(selected_indices=valid_indecies)
-        self.valid_set["weights"] = self.valid_set["weights"] * total_number / 50_000
-
-        self.holdout_set = get_train_set(selected_indices=holdout_indecies)
-        self.holdout_set["weights"] = (
-            self.holdout_set["weights"] * total_number / 50_000
-        )
 
         print("Training Data: ", self.training_set["data"].shape)
         print("Training Labels: ", self.training_set["labels"].shape)
@@ -97,6 +93,17 @@ class Model:
             "sum_bkg_weights: ",
             self.training_set["weights"][self.training_set["labels"] == 0].sum(),
         )
+
+        valid_df = get_train_set(selected_indices=valid_indecies)
+
+        self.valid_set = {
+            "labels": valid_df.pop("labels"),
+            "weights": valid_df.pop("weights"),
+            "detailed_labels": valid_df.pop("detailed_labels"),
+            "data": valid_df,
+        }
+        del valid_df
+
         print()
         print("Valid Data: ", self.valid_set["data"].shape)
         print("Valid Labels: ", self.valid_set["labels"].shape)
@@ -109,6 +116,18 @@ class Model:
             "sum_bkg_weights: ",
             self.valid_set["weights"][self.valid_set["labels"] == 0].sum(),
         )
+
+        holdout_df = get_train_set(selected_indices=holdout_indecies)
+
+        self.holdout_set = {
+            "labels": holdout_df.pop("labels"),
+            "weights": holdout_df.pop("weights"),
+            "detailed_labels": holdout_df.pop("detailed_labels"),
+            "data": holdout_df,
+        }
+
+        del holdout_df
+
         print()
         print("Holdout Data: ", self.holdout_set["data"].shape)
         print("Holdout Labels: ", self.holdout_set["labels"].shape)
@@ -196,15 +215,14 @@ class Model:
         valid_results = compute_mu(
             valid_score, self.valid_set["weights"], self.saved_info
         )
-        
 
         print("Train Results: ")
         for key in train_results.keys():
             print("\t", key, " : ", train_results[key])
-            
+
         print("Holdout Results: ")
         for key in holdout_results.keys():
-            print("\t", key, " : ", holdout_results[key])        
+            print("\t", key, " : ", holdout_results[key])
 
         print("Valid Results: ")
         for key in valid_results.keys():
