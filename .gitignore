@@ -160,8 +160,7 @@ cython_debug/
 #.idea/
 
 # Other files
-public_data/
-BlackSwan-code*
+*_data/
 sample_result_submission/
 scoring_output/
 *.zip
