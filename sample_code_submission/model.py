@@ -6,7 +6,6 @@ BDT = True
 NN = False
 
 from statistical_analysis import calculate_saved_info, compute_mu
-from feature_engineering import feature_engineering
 import HiggsML.visualization as visualization
 import numpy as np
 import pandas as pd
@@ -44,7 +43,7 @@ class Model:
             your trained model file is now in model_dir, you can load it from here
     """
 
-    def __init__(self, get_train_set=None, systematics=None):
+    def __init__(self, get_train_set=None, systematics=None, model_type = "sample_model"):
         """
         Model class constructor
 
@@ -142,23 +141,25 @@ class Model:
         )
         print(" \n ")
 
-        self.training_set["data"] = feature_engineering(self.training_set["data"])
-
         print("Training Data: ", self.training_set["data"].shape)
 
-        if BDT:
+        if model_type == "BDT" :
             from boosted_decision_tree import BoostedDecisionTree
 
             self.model = BoostedDecisionTree(train_data=self.training_set["data"])
             self.name = "BDT"
-
-            print("Model is BDT")
-        else:
+        elif model_type == "NN" :
             from neural_network import NeuralNetwork
 
             self.model = NeuralNetwork(train_data=self.training_set["data"])
             self.name = "NN"
-            print("Model is NN")
+        else :
+            from sample_model import SampleModel
+            self.model = SampleModel()
+            self.name = "Sample Model"
+
+        print(f" Model is { self.name}")
+              
 
     def fit(self):
         """
@@ -194,10 +195,10 @@ class Model:
             balanced_set["data"], balanced_set["labels"], balanced_set["weights"]
         )
 
-        self.holdout_set["data"] = feature_engineering(self.holdout_set["data"])
+        self.saved_info = calculate_saved_info(self.model,self.holdout_set)
 
-        self.saved_info = calculate_saved_info(self.model, self.holdout_set)
 
+        # Compute  Results
         train_score = self.model.predict(self.training_set["data"])
         train_results = compute_mu(
             train_score, self.training_set["weights"], self.saved_info
@@ -208,21 +209,21 @@ class Model:
             holdout_score, self.holdout_set["weights"], self.saved_info
         )
 
-        self.valid_set["data"] = feature_engineering(self.valid_set["data"])
 
         valid_score = self.model.predict(self.valid_set["data"])
 
         valid_results = compute_mu(
             valid_score, self.valid_set["weights"], self.saved_info
         )
+        
 
         print("Train Results: ")
         for key in train_results.keys():
             print("\t", key, " : ", train_results[key])
-
+            
         print("Holdout Results: ")
         for key in holdout_results.keys():
-            print("\t", key, " : ", holdout_results[key])
+            print("\t", key, " : ", holdout_results[key])        
 
         print("Valid Results: ")
         for key in valid_results.keys():
@@ -266,7 +267,7 @@ class Model:
                 - p84
         """
 
-        test_data = feature_engineering(test_set["data"])
+        test_data = test_set["data"]
         test_weights = test_set["weights"]
 
         predictions = self.model.predict(test_data)
