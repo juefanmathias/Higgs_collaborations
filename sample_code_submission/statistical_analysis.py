@@ -40,7 +40,7 @@ def compute_mu(score, weight, saved_info):
     del_mu_stat = (
         np.sqrt(saved_info["beta"] + saved_info["gamma"]) / saved_info["gamma"]
     )
-    del_mu_sys = abs(0.1 * mu)
+    del_mu_sys = abs(0.0 * mu)
     del_mu_tot = np.sqrt(del_mu_stat**2 + del_mu_sys**2)
 
     return {

@@ -6,11 +6,7 @@ BDT = True
 NN = False
 
 from statistical_analysis import calculate_saved_info, compute_mu
-import HiggsML.visualization as visualization
 import numpy as np
-import pandas as pd
-
-import os
 
 
 class Model:
@@ -60,13 +56,13 @@ class Model:
             None
         """
 
-        indecies = np.arange(150)
+        indecies = np.arange(15000)
 
         np.random.shuffle(indecies)
 
-        train_indecies = indecies[:50]
-        holdout_indecies = indecies[50:100]
-        valid_indecies = indecies[100:]
+        train_indecies = indecies[:5000]
+        holdout_indecies = indecies[5000:10000]
+        valid_indecies = indecies[10000:]
 
         training_df = get_train_set(selected_indices=train_indecies)
 
@@ -195,8 +191,11 @@ class Model:
             balanced_set["data"], balanced_set["labels"], balanced_set["weights"]
         )
 
+        self.holdout_set = self.systematics(self.holdout_set)
+
         self.saved_info = calculate_saved_info(self.model,self.holdout_set)
 
+        self.training_set = self.systematics(self.training_set)
 
         # Compute  Results
         train_score = self.model.predict(self.training_set["data"])
@@ -204,11 +203,14 @@ class Model:
             train_score, self.training_set["weights"], self.saved_info
         )
 
+
         holdout_score = self.model.predict(self.holdout_set["data"])
         holdout_results = compute_mu(
             holdout_score, self.holdout_set["weights"], self.saved_info
         )
 
+
+        self.valid_set = self.systematics(self.valid_set)
 
         valid_score = self.model.predict(self.valid_set["data"])
 
@@ -231,20 +233,12 @@ class Model:
 
         self.valid_set["data"]["score"] = valid_score
 
-        valid_visualize = visualization.Dataset_visualise(
-            data_set=self.valid_set,
-            columns=[
-                "PRI_jet_leading_pt",
-                "PRI_met",
-                "score",
-            ],
-            name="Train Set",
-        )
-        valid_visualize.examine_dataset()
-        valid_visualize.histogram_dataset()
-        valid_visualize.stacked_histogram("score", mu_hat=100)
+        from HiggsML.visualization import stacked_histogram
+        stacked_histogram(self.valid_set["data"], self.valid_set["labels"], self.valid_set["weights"], self.valid_set["detailed_labels"],"score")
 
-        visualization.roc_curve_wrapper(
+        from utils import roc_curve_wrapper
+
+        roc_curve_wrapper(
             score=valid_score,
             labels=self.valid_set["labels"],
             weights=self.valid_set["weights"],
@@ -267,8 +261,12 @@ class Model:
                 - p84
         """
 
+        
+
         test_data = test_set["data"]
         test_weights = test_set["weights"]
+
+        print("sumof weights",np.sum(test_weights))
 
         predictions = self.model.predict(test_data)
 
