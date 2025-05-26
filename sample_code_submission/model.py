@@ -6,12 +6,7 @@ BDT = True
 NN = False
 
 from statistical_analysis import calculate_saved_info, compute_mu
-from feature_engineering import feature_engineering
-import HiggsML.visualization as visualization
 import numpy as np
-import pandas as pd
-
-import os
 
 
 class Model:
@@ -44,7 +39,7 @@ class Model:
             your trained model file is now in model_dir, you can load it from here
     """
 
-    def __init__(self, get_train_set=None, systematics=None):
+    def __init__(self, get_train_set=None, systematics=None, model_type = "sample_model"):
         """
         Model class constructor
 
@@ -61,30 +56,26 @@ class Model:
             None
         """
 
-        indecies = np.arange(150_000)
+        indecies = np.arange(15000)
 
         np.random.shuffle(indecies)
 
-        train_indecies = indecies[:50_000]
-        holdout_indecies = indecies[50_000:100_000]
-        valid_indecies = indecies[100_000:]
+        train_indecies = indecies[:5000]
+        holdout_indecies = indecies[5000:10000]
+        valid_indecies = indecies[10000:]
 
-        self.training_set = get_train_set(selected_indices=train_indecies)
+        training_df = get_train_set(selected_indices=train_indecies)
 
-        total_number = self.training_set["total_rows"]
+        self.training_set = {
+            "labels": training_df.pop("labels"),
+            "weights": training_df.pop("weights"),
+            "detailed_labels": training_df.pop("detailed_labels"),
+            "data": training_df,
+        }
 
-        self.training_set["weights"] = (
-            self.training_set["weights"] * total_number / 50_000
-        )
+        del training_df
+
         self.systematics = systematics
-
-        self.valid_set = get_train_set(selected_indices=valid_indecies)
-        self.valid_set["weights"] = self.valid_set["weights"] * total_number / 50_000
-
-        self.holdout_set = get_train_set(selected_indices=holdout_indecies)
-        self.holdout_set["weights"] = (
-            self.holdout_set["weights"] * total_number / 50_000
-        )
 
         print("Training Data: ", self.training_set["data"].shape)
         print("Training Labels: ", self.training_set["labels"].shape)
@@ -97,6 +88,17 @@ class Model:
             "sum_bkg_weights: ",
             self.training_set["weights"][self.training_set["labels"] == 0].sum(),
         )
+
+        valid_df = get_train_set(selected_indices=valid_indecies)
+
+        self.valid_set = {
+            "labels": valid_df.pop("labels"),
+            "weights": valid_df.pop("weights"),
+            "detailed_labels": valid_df.pop("detailed_labels"),
+            "data": valid_df,
+        }
+        del valid_df
+
         print()
         print("Valid Data: ", self.valid_set["data"].shape)
         print("Valid Labels: ", self.valid_set["labels"].shape)
@@ -109,6 +111,18 @@ class Model:
             "sum_bkg_weights: ",
             self.valid_set["weights"][self.valid_set["labels"] == 0].sum(),
         )
+
+        holdout_df = get_train_set(selected_indices=holdout_indecies)
+
+        self.holdout_set = {
+            "labels": holdout_df.pop("labels"),
+            "weights": holdout_df.pop("weights"),
+            "detailed_labels": holdout_df.pop("detailed_labels"),
+            "data": holdout_df,
+        }
+
+        del holdout_df
+
         print()
         print("Holdout Data: ", self.holdout_set["data"].shape)
         print("Holdout Labels: ", self.holdout_set["labels"].shape)
@@ -123,23 +137,25 @@ class Model:
         )
         print(" \n ")
 
-        self.training_set["data"] = feature_engineering(self.training_set["data"])
-
         print("Training Data: ", self.training_set["data"].shape)
 
-        if BDT:
+        if model_type == "BDT" :
             from boosted_decision_tree import BoostedDecisionTree
 
             self.model = BoostedDecisionTree(train_data=self.training_set["data"])
             self.name = "BDT"
-
-            print("Model is BDT")
-        else:
+        elif model_type == "NN" :
             from neural_network import NeuralNetwork
 
             self.model = NeuralNetwork(train_data=self.training_set["data"])
             self.name = "NN"
-            print("Model is NN")
+        else :
+            from sample_model import SampleModel
+            self.model = SampleModel()
+            self.name = "Sample Model"
+
+        print(f" Model is { self.name}")
+              
 
     def fit(self):
         """
@@ -175,21 +191,26 @@ class Model:
             balanced_set["data"], balanced_set["labels"], balanced_set["weights"]
         )
 
-        self.holdout_set["data"] = feature_engineering(self.holdout_set["data"])
+        self.holdout_set = self.systematics(self.holdout_set)
 
-        self.saved_info = calculate_saved_info(self.model, self.holdout_set)
+        self.saved_info = calculate_saved_info(self.model,self.holdout_set)
 
+        self.training_set = self.systematics(self.training_set)
+
+        # Compute  Results
         train_score = self.model.predict(self.training_set["data"])
         train_results = compute_mu(
             train_score, self.training_set["weights"], self.saved_info
         )
+
 
         holdout_score = self.model.predict(self.holdout_set["data"])
         holdout_results = compute_mu(
             holdout_score, self.holdout_set["weights"], self.saved_info
         )
 
-        self.valid_set["data"] = feature_engineering(self.valid_set["data"])
+
+        self.valid_set = self.systematics(self.valid_set)
 
         valid_score = self.model.predict(self.valid_set["data"])
 
@@ -212,20 +233,12 @@ class Model:
 
         self.valid_set["data"]["score"] = valid_score
 
-        valid_visualize = visualization.Dataset_visualise(
-            data_set=self.valid_set,
-            columns=[
-                "PRI_jet_leading_pt",
-                "PRI_met",
-                "score",
-            ],
-            name="Train Set",
-        )
-        valid_visualize.examine_dataset()
-        valid_visualize.histogram_dataset()
-        valid_visualize.stacked_histogram("score", mu_hat=100)
+        from HiggsML.visualization import stacked_histogram
+        stacked_histogram(self.valid_set["data"], self.valid_set["labels"], self.valid_set["weights"], self.valid_set["detailed_labels"],"score")
 
-        visualization.roc_curve_wrapper(
+        from utils import roc_curve_wrapper
+
+        roc_curve_wrapper(
             score=valid_score,
             labels=self.valid_set["labels"],
             weights=self.valid_set["weights"],
@@ -248,8 +261,12 @@ class Model:
                 - p84
         """
 
-        test_data = feature_engineering(test_set["data"])
+        
+
+        test_data = test_set["data"]
         test_weights = test_set["weights"]
+
+        print("sumof weights",np.sum(test_weights))
 
         predictions = self.model.predict(test_data)
 
