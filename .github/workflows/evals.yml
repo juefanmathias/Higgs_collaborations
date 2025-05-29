@@ -1,0 +1,32 @@
+name: Evaluate Student Submission
+
+on:
+  push:
+    paths:
+      - 'sample_code_submission/**'
+      - 'HiggsML/**'
+      - '.github/workflows/eval.yml'
+  workflow_dispatch:
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python and install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 python3-pip
+          pip3 install --upgrade pip
+          pip3 install numpy pandas pyarrow matplotlib xgboost scikit-learn nflows lightgbm seaborn iminuit higgsml
+          pip3 install keras
+          pip3 install 'tensorflow[and-cuda]' || pip3 install tensorflow
+
+      - name: Run evaluation
+        run: |
+          python3 -m HiggsML.run_competition \
+            --submission sample_code_submission \
+            --output sample_result_submission
