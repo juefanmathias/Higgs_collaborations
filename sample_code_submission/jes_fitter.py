@@ -1,12 +1,13 @@
 import numpy as np
 from HiggsML.systematics import systematics
 
+
 def jes_fitter(
     model,
     train_set,
 ):
     """
-    Task 1 : Ananlysis JES Uncertainty
+    Task 1 : Analysis JES Uncertainty
     1. Loop over different values of jes and make store the score
     2. Make a histogram of the score
 

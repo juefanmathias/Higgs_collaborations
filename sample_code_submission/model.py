@@ -15,8 +15,8 @@ class Model:
 
     This class should consists of the following functions
     1) init :
-        takes 2 arguments: train_set and systematics,
-        can be used for intiializing variables, classifier etc.
+        takes 3 arguments: train_set systematics and model_type.
+        can be used for initializing variables, classifier etc.
     2) fit :
         takes no arguments
         can be used to train a classifier
@@ -39,7 +39,7 @@ class Model:
             your trained model file is now in model_dir, you can load it from here
     """
 
-    def __init__(self, get_train_set=None, systematics=None, model_type = "sample_model"):
+    def __init__(self, get_train_set=None, systematics=None, model_type="sample_model"):
         """
         Model class constructor
 
@@ -56,15 +56,15 @@ class Model:
             None
         """
 
-        indecies = np.arange(15000)
+        indices = np.arange(15000)
 
-        np.random.shuffle(indecies)
+        np.random.shuffle(indices)
 
-        train_indecies = indecies[:5000]
-        holdout_indecies = indecies[5000:10000]
-        valid_indecies = indecies[10000:]
+        train_indices = indices[:5000]
+        holdout_indices = indices[5000:10000]
+        valid_indices = indices[10000:]
 
-        training_df = get_train_set(selected_indices=train_indecies)
+        training_df = get_train_set(selected_indices=train_indices)
 
         self.training_set = {
             "labels": training_df.pop("labels"),
@@ -89,7 +89,7 @@ class Model:
             self.training_set["weights"][self.training_set["labels"] == 0].sum(),
         )
 
-        valid_df = get_train_set(selected_indices=valid_indecies)
+        valid_df = get_train_set(selected_indices=valid_indices)
 
         self.valid_set = {
             "labels": valid_df.pop("labels"),
@@ -112,7 +112,7 @@ class Model:
             self.valid_set["weights"][self.valid_set["labels"] == 0].sum(),
         )
 
-        holdout_df = get_train_set(selected_indices=holdout_indecies)
+        holdout_df = get_train_set(selected_indices=holdout_indices)
 
         self.holdout_set = {
             "labels": holdout_df.pop("labels"),
@@ -138,24 +138,26 @@ class Model:
         print(" \n ")
 
         print("Training Data: ", self.training_set["data"].shape)
+        print(f"DEBUG: model_type = {repr(model_type)}")
 
-        if model_type == "BDT" :
+        if model_type == "BDT":
             from boosted_decision_tree import BoostedDecisionTree
 
             self.model = BoostedDecisionTree(train_data=self.training_set["data"])
-            self.name = "BDT"
-        elif model_type == "NN" :
+        elif model_type == "NN":
             from neural_network import NeuralNetwork
 
             self.model = NeuralNetwork(train_data=self.training_set["data"])
-            self.name = "NN"
-        else :
+        elif model_type == "sample_model":
             from sample_model import SampleModel
+
             self.model = SampleModel()
-            self.name = "Sample Model"
+        else:
+            print(f"model_type {model_type} not found")
+            raise ValueError(f"model_type {model_type} not found")
+        self.name = model_type
 
         print(f" Model is { self.name}")
-              
 
     def fit(self):
         """
@@ -193,7 +195,7 @@ class Model:
 
         self.holdout_set = self.systematics(self.holdout_set)
 
-        self.saved_info = calculate_saved_info(self.model,self.holdout_set)
+        self.saved_info = calculate_saved_info(self.model, self.holdout_set)
 
         self.training_set = self.systematics(self.training_set)
 
@@ -203,12 +205,10 @@ class Model:
             train_score, self.training_set["weights"], self.saved_info
         )
 
-
         holdout_score = self.model.predict(self.holdout_set["data"])
         holdout_results = compute_mu(
             holdout_score, self.holdout_set["weights"], self.saved_info
         )
-
 
         self.valid_set = self.systematics(self.valid_set)
 
@@ -217,26 +217,38 @@ class Model:
         valid_results = compute_mu(
             valid_score, self.valid_set["weights"], self.saved_info
         )
-        
 
         print("Train Results: ")
         for key in train_results.keys():
             print("\t", key, " : ", train_results[key])
-            
+
         print("Holdout Results: ")
         for key in holdout_results.keys():
-            print("\t", key, " : ", holdout_results[key])        
+            print("\t", key, " : ", holdout_results[key])
 
         print("Valid Results: ")
         for key in valid_results.keys():
             print("\t", key, " : ", valid_results[key])
 
         self.valid_set["data"]["score"] = valid_score
+        from utils import roc_curve_wrapper, histogram_dataset
+
+        histogram_dataset(
+            self.valid_set["data"],
+            self.valid_set["labels"],
+            self.valid_set["weights"],
+            columns=["score"],
+        )
 
         from HiggsML.visualization import stacked_histogram
-        stacked_histogram(self.valid_set["data"], self.valid_set["labels"], self.valid_set["weights"], self.valid_set["detailed_labels"],"score")
 
-        from utils import roc_curve_wrapper
+        stacked_histogram(
+            self.valid_set["data"],
+            self.valid_set["labels"],
+            self.valid_set["weights"],
+            self.valid_set["detailed_labels"],
+            "score",
+        )
 
         roc_curve_wrapper(
             score=valid_score,
@@ -261,12 +273,8 @@ class Model:
                 - p84
         """
 
-        
-
         test_data = test_set["data"]
         test_weights = test_set["weights"]
-
-        print("sumof weights",np.sum(test_weights))
 
         predictions = self.model.predict(test_data)
 

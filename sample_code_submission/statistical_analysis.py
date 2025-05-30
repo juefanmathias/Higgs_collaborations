@@ -1,7 +1,7 @@
 import numpy as np
 from HiggsML.systematics import systematics
 
-'''
+"""
 Task 1a : Counting Estimator
 1.write the saved_info dictionary such that it contains the following keys
     1. beta
@@ -17,11 +17,11 @@ Task 1b : Stat-Only Likelihood Estimator
 
 Task 2 : Systematic Uncertainty
 1. substitute the beta and gamma with the tes_fit and jes_fit functions
-2. Write a function to likelyhood function which profiles over mu, tes and jes
+2. Write a function to likelihood function which profiles over mu, tes and jes
 3. Use Minuit to minimize the NLL
 4. return the mu and its uncertainty
 
-'''
+"""
 
 
 def compute_mu(score, weight, saved_info):
@@ -34,7 +34,6 @@ def compute_mu(score, weight, saved_info):
 
     score = score.flatten() > 0.5
     score = score.astype(int)
-    
 
     mu = (np.sum(score * weight) - saved_info["beta"]) / saved_info["gamma"]
     del_mu_stat = (
@@ -58,7 +57,6 @@ def calculate_saved_info(model, holdout_set):
     """
 
     score = model.predict(holdout_set["data"])
-
 
     from tes_fitter import tes_fitter
     from jes_fitter import jes_fitter
@@ -86,5 +84,3 @@ def calculate_saved_info(model, holdout_set):
     print("saved_info", saved_info)
 
     return saved_info
-
-  

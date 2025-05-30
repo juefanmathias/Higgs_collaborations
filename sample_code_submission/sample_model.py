@@ -1,5 +1,5 @@
 import numpy as np
-import pandas as pd
+
 
 class SampleModel:
     """
@@ -11,8 +11,10 @@ class SampleModel:
 
     def __init__(self):
         pass
+
     def fit(self, train_data, labels, weights=None):
         pass
 
     def predict(self, test_data):
+
         return np.array(test_data["DER_mass_vis"])

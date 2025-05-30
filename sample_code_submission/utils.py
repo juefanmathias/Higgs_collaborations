@@ -114,6 +114,7 @@ def histogram_dataset(dfall, target, weights, columns=None, nbin=25):
     # Hide any unused subplots
     for j in range(i + 1, len(axes)):
         fig.delaxes(axes[j])
+    plt.show()
 
 
 def roc_curve_wrapper(score, labels, weights, plot_label="model", color="b", lw=2):
