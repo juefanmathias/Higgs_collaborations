@@ -15,8 +15,8 @@ class Model:
 
     This class should consists of the following functions
     1) init :
-        takes 2 arguments: train_set and systematics,
-        can be used for intializing variables, classifier etc.
+        takes 3 arguments: train_set systematics and model_type.
+        can be used for initializing variables, classifier etc.
     2) fit :
         takes no arguments
         can be used to train a classifier
