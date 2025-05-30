@@ -16,7 +16,7 @@ class Model:
     This class should consists of the following functions
     1) init :
         takes 2 arguments: train_set and systematics,
-        can be used for intiializing variables, classifier etc.
+        can be used for intializing variables, classifier etc.
     2) fit :
         takes no arguments
         can be used to train a classifier
@@ -56,15 +56,15 @@ class Model:
             None
         """
 
-        indecies = np.arange(15000)
+        indices = np.arange(15000)
 
-        np.random.shuffle(indecies)
+        np.random.shuffle(indices)
 
-        train_indecies = indecies[:5000]
-        holdout_indecies = indecies[5000:10000]
-        valid_indecies = indecies[10000:]
+        train_indices = indices[:5000]
+        holdout_indices = indices[5000:10000]
+        valid_indices = indices[10000:]
 
-        training_df = get_train_set(selected_indices=train_indecies)
+        training_df = get_train_set(selected_indices=train_indices)
 
         self.training_set = {
             "labels": training_df.pop("labels"),
@@ -89,7 +89,7 @@ class Model:
             self.training_set["weights"][self.training_set["labels"] == 0].sum(),
         )
 
-        valid_df = get_train_set(selected_indices=valid_indecies)
+        valid_df = get_train_set(selected_indices=valid_indices)
 
         self.valid_set = {
             "labels": valid_df.pop("labels"),
@@ -112,7 +112,7 @@ class Model:
             self.valid_set["weights"][self.valid_set["labels"] == 0].sum(),
         )
 
-        holdout_df = get_train_set(selected_indices=holdout_indecies)
+        holdout_df = get_train_set(selected_indices=holdout_indices)
 
         self.holdout_set = {
             "labels": holdout_df.pop("labels"),

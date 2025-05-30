@@ -7,7 +7,7 @@ def tes_fitter(
     train_set,
 ):
     """
-    Task 1 : Ananlysis TES Uncertainty
+    Task 1 : Analysis TES Uncertainty
     1. Loop over different values of tes and make store the score
     2. Make a histogram of the score
 

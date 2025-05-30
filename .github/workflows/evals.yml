@@ -24,7 +24,7 @@ jobs:
 
       - name: Spell check with codespell
         run: |
-          codespell sample_code_submission
+          codespell --dictionary .github/workflow/my_dictionary.txt sample_code_submission
 
       - name: Lint with flake8
         run: |

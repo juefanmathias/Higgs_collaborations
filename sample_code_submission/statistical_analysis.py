@@ -17,7 +17,7 @@ Task 1b : Stat-Only Likelihood Estimator
 
 Task 2 : Systematic Uncertainty
 1. substitute the beta and gamma with the tes_fit and jes_fit functions
-2. Write a function to likelyhood function which profiles over mu, tes and jes
+2. Write a function to likelihood function which profiles over mu, tes and jes
 3. Use Minuit to minimize the NLL
 4. return the mu and its uncertainty
 
