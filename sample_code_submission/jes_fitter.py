@@ -1,6 +1,7 @@
 import numpy as np
 from HiggsML.systematics import systematics
 
+
 def jes_fitter(
     model,
     train_set,

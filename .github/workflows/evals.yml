@@ -2,6 +2,8 @@ name: Evaluate Student Submission
 
 on:
   push:
+    branches:
+      - main
     paths:
       - 'sample_code_submission/**'
       - 'HiggsML/**'
@@ -23,10 +25,25 @@ jobs:
           pip3 install --upgrade pip
           pip3 install numpy pandas pyarrow matplotlib xgboost scikit-learn nflows lightgbm seaborn iminuit higgsml
           pip3 install keras
-          pip3 install 'tensorflow[and-cuda]' || pip3 install tensorflow
+          pip3 install tensorflow
+          pip3 install black codespell flake8
+
+      - name: Spell check with codespell
+        run: |
+          codespell sample_code_submission
+
+      - name: Lint with flake8
+        run: |
+          flake8 sample_code_submission
+
+      - name: Format check with black
+        run: |
+          black --check sample_code_submission 
 
       - name: Run evaluation
         run: |
           python3 -m HiggsML.run_competition \
             --submission sample_code_submission \
-            --output sample_result_submission
+            --output sample_result_submission \
+            --num-of-sets 2 \
+            --num-pseudo-experiments 5 \

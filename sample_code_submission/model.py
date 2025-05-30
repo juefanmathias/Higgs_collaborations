@@ -138,22 +138,24 @@ class Model:
         print(" \n ")
 
         print("Training Data: ", self.training_set["data"].shape)
+        print(f"DEBUG: model_type = {repr(model_type)}")
 
         if model_type == "BDT":
             from boosted_decision_tree import BoostedDecisionTree
 
             self.model = BoostedDecisionTree(train_data=self.training_set["data"])
-            self.name = "BDT"
         elif model_type == "NN":
             from neural_network import NeuralNetwork
 
             self.model = NeuralNetwork(train_data=self.training_set["data"])
-            self.name = "NN"
-        else:
+        elif model_type == "sample_model":
             from sample_model import SampleModel
 
             self.model = SampleModel()
-            self.name = "Sample Model"
+        else:
+            print(f"model_type {model_type} not found")
+            raise ValueError(f"model_type {model_type} not found")
+        self.name = model_type
 
         print(f" Model is { self.name}")
 
